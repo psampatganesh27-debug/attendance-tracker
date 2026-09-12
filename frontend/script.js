@@ -403,22 +403,35 @@ function showToast(message, type = "info") {
 
 // Helper: Populate all Subject Dropdowns
 async function populateSubjectDropdowns() {
-  const res = await fetch("/api/dashboard");
-  const subjects = await res.json();
-  const dropdowns = document.querySelectorAll(".subject-dropdown");
-  // Add this inside populateSubjectDropdowns() where the other dropdowns are filled
-  const historySelect = document.getElementById('history-subject-id');
-  if (historySelect) historySelect.innerHTML = '<option value="">-- Choose Subject --</option>' + options;
-
-  dropdowns.forEach((select) => {
-    select.innerHTML = '<option value="">Select Subject</option>';
-    subjects.forEach((sub) => {
-      const opt = document.createElement("option");
-      opt.value = sub.subject_id;
-      opt.textContent = sub.subject_name;
-      select.appendChild(opt);
+  try {
+    const res = await fetch("/api/dashboard");
+    const subjects = await res.json();
+    
+    // 1. Build the HTML string for the options exactly once
+    let optionsHTML = '<option value="">-- Choose a Subject --</option>';
+    subjects.forEach(sub => {
+      optionsHTML += `<option value="${sub.subject_id}">${sub.subject_name}</option>`;
     });
-  });
+
+    // 2. Inject the built options into every dropdown ID used in the app
+    const schedSelect = document.getElementById("sched-subject-id");
+    if (schedSelect) schedSelect.innerHTML = optionsHTML;
+
+    const extraSelect = document.getElementById("extra-subject-id");
+    if (extraSelect) extraSelect.innerHTML = optionsHTML;
+
+    const historySelect = document.getElementById("history-subject-id");
+    if (historySelect) historySelect.innerHTML = optionsHTML;
+
+    // 3. Fallback for any generic class-based dropdowns
+    const dropdowns = document.querySelectorAll(".subject-dropdown");
+    dropdowns.forEach(select => {
+      select.innerHTML = optionsHTML;
+    });
+
+  } catch (error) {
+    console.error("Error populating dropdowns:", error);
+  }
 }
 
 // Fetch and render subject health cards
