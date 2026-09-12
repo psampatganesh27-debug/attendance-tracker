@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Tracker</title>
+  <link rel="stylesheet" href="/frontend/style.css">
+</head>
+<body>
+  <div id="toast-container"></div>
+
+  <div class="container">
+    <header>
+      <h1>Attendance Tracker</h1>
+      <p>Target Minimum: <strong>80%</strong></p>
+    </header>
+
+    <!-- Setup Form -->
+    <details class="setup-card">
+      <summary>⚙️ Semester Setup & Configuration</summary>
+      <div class="setup-content">
+        <section class="setup-group">
+          <h3>1. Add Subjects</h3>
+          <form id="add-subject-form">
+            <input type="text" id="subject-name" placeholder="Subject Name (e.g. Data Structures)" required>
+            <button type="submit">Add Subject</button>
+          </form>
+        </section>
+
+        <!-- 2. Add Holiday -->
+        <section class="setup-group">
+          <h3>2. Add Holiday / Vacation Range</h3>
+          <form id="add-holiday-form">
+            <label>From: <input type="date" id="holiday-start" required></label>
+            <label>To: <input type="date" id="holiday-end"></label>
+            <input type="text" id="holiday-desc" placeholder="Reason (e.g. Diwali Break)">
+            <button type="submit">Add Holiday Range</button>
+          </form>
+        </section>
+
+        <!-- 3. Map Schedule (Weekly) -->
+        <section class="setup-group">
+          <h3>3. Map Schedule (Weekly)</h3>
+          <form id="add-schedule-form">
+            <select id="sched-subject-id" class="subject-dropdown" required>
+              <option value="">Select Subject</option>
+            </select>
+            <select id="sched-day" required>
+             <option value="0">Monday</option>
+             <option value="1">Tuesday</option>
+             <option value="2">Wednesday</option>
+             <option value="3">Thursday</option>
+             <option value="4">Friday</option>
+             <option value="5">Saturday</option>
+             <option value="6">Sunday</option>
+            </select>
+            <label>Classes per day: 
+              <input type="number" id="sched-count" min="1" max="10" value="1" style="width: 60px;" required>
+            </label>
+            <button type="submit">Add Schedule</button>
+          </form>
+        </section>
+
+        <!-- 4. Generate Semester -->
+        <section class="setup-group">
+          <h3>4. Generate Semester Logs</h3>
+          <form id="generate-semester-form">
+            <label>Start Date: <input type="date" id="start-date" required></label>
+            <label>End Date: <input type="date" id="end-date" required></label>
+            <button type="submit">Generate Logs</button>
+          </form>
+        </section>
+
+        <!-- 5. Add Extra Class -->
+        <section class="setup-group">
+          <h3>5. Add Extra / Makeup Class</h3>
+          <form id="add-extra-class-form">
+            <select id="extra-subject-id" class="subject-dropdown" required>
+              <option value="">Select Subject</option>
+            </select>
+            <label>Date: <input type="date" id="extra-class-date" required></label>
+            <select id="extra-class-status">
+              <option value="PENDING">Status: Pending</option>
+              <option value="PRESENT">Status: Present</option>
+              <option value="ABSENT">Status: Absent</option>
+            </select>
+            <button type="submit" style="background-color: #059669;">Log Extra Class</button>
+          </form>
+        </section>
+
+        <!-- 6. Danger Zone: Reset Database -->
+        <section class="setup-group">
+          <h3 style="color: #ef4444;">6. Danger Zone</h3>
+          <button type="button" id="btn-reset-db" style="background-color: #dc2626;">Wipe & Reset Database</button>
+        </section>
+      </div>
+    </details>
+
+    <!-- Today's Attendance Section -->
+    <section class="dashboard-section">
+      <h2>Today's Classes</h2>
+      <div id="today-classes-list" class="grid-container">
+        <p class="empty-state">Loading today's classes...</p>
+      </div>
+    </section>
+
+    <details class="setup-card" style="margin-top: 20px;">
+    <summary>✏️ Edit Past Attendance</summary>
+    <div style="padding: 15px;">
+        <label for="history-subject-id">Select Subject:</label>
+        <select id="history-subject-id" onchange="loadHistory()" style="width: 100%; margin-bottom: 15px; padding: 8px;">
+            <option value="">-- Choose a Subject --</option>
+        </select>
+        
+        <div id="history-list">
+            <p style="color: gray; font-size: 0.9em;">Select a subject to view past records.</p>
+        </div>
+    </div>
+</details>
+
+
+    <!-- Subject Health Cards -->
+    <section class="dashboard-section">
+      <h2>Subject Dashboard</h2>
+      <div id="subject-cards-list" class="grid-container">
+        <p class="empty-state">Loading summary data...</p>
+      </div>
+    </section>
+  </div>
+
+  <script src="/frontend/script.js"></script>
+</body>
+</html>
