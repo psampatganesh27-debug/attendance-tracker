@@ -536,26 +536,29 @@ async function loadHistory() {
         return;
     }
     
-    container.innerHTML = 'Loading past records...';
+    container.innerHTML = '<p>Loading past records...</p>';
     
     try {
         const response = await fetch(`/api/history/${subjectId}`);
         const logs = await response.json();
         
         if (logs.length === 0) {
-            container.innerHTML = '<p>No past classes found for this subject.</p>';
+            container.innerHTML = '<p class="empty-state">No past classes found for this subject.</p>';
             return;
         }
         
         let html = '<div style="display: flex; flex-direction: column; gap: 10px;">';
         logs.forEach(log => {
             html += `
-                <div style="border: 1px solid #ccc; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div><strong>${log.class_date}</strong>: Current Status - <em>${log.status}</em></div>
-                    <div style="display: flex; gap: 5px;">
-                        <button onclick="updateHistoryStatus(${log.log_id}, 'PRESENT')" style="padding: 5px 10px; cursor: pointer;">Present</button>
-                        <button onclick="updateHistoryStatus(${log.log_id}, 'ABSENT')" style="padding: 5px 10px; cursor: pointer;">Absent</button>
-                        <button onclick="updateHistoryStatus(${log.log_id}, 'CANCELLED')" style="padding: 5px 10px; cursor: pointer;">Cancelled</button>
+                <div class="card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; padding: 15px; margin-bottom: 0;">
+                    <div><strong>${log.class_date}</strong>: Status &rarr; <strong>${log.status}</strong></div>
+                    <div class="status-btns" style="display: flex; gap: 8px; margin-top: 0;">
+                        <button class="btn-present ${log.status === 'PRESENT' ? 'active' : ''}" 
+                                onclick="updateHistoryStatus(${log.log_id}, 'PRESENT', '${log.status}')">Present</button>
+                        <button class="btn-absent ${log.status === 'ABSENT' ? 'active' : ''}" 
+                                onclick="updateHistoryStatus(${log.log_id}, 'ABSENT', '${log.status}')">Absent</button>
+                        <button class="btn-cancel ${log.status === 'CANCELLED' ? 'active' : ''}" 
+                                onclick="updateHistoryStatus(${log.log_id}, 'CANCELLED', '${log.status}')">Cancel</button>
                     </div>
                 </div>
             `;
@@ -568,7 +571,13 @@ async function loadHistory() {
     }
 }
 
-async function updateHistoryStatus(logId, newStatus) {
+// Update history status with UI Toasts
+async function updateHistoryStatus(logId, newStatus, currentStatus) {
+    if (currentStatus === newStatus) {
+        showToast(`Already marked as ${newStatus}`, "info");
+        return;
+    }
+
     try {
         const response = await fetch(`/api/attendance/${logId}`, {
             method: 'PATCH',
@@ -577,14 +586,15 @@ async function updateHistoryStatus(logId, newStatus) {
         });
         
         if (response.ok) {
-            // If you have a showToast function, use it here
-            alert(`Record updated to ${newStatus}`);
-            loadHistory(); // Instantly refresh the list to show the new status
+            showToast(`Record updated to ${newStatus}`, "success");
+            loadHistory(); // Instantly refresh the list to show the new active button
             fetchDashboard(); // Refresh the main dashboard percentages
+            fetchTodayClasses(); // Keep today's class view in sync
         } else {
-            alert("Failed to update status.");
+            showToast("Failed to update status.", "error");
         }
     } catch (error) {
         console.error("Error updating status:", error);
+        showToast("Network error while updating.", "error");
     }
 }
