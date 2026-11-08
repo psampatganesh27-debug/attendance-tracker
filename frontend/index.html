@@ -7,6 +7,25 @@
   <link rel="stylesheet" href="/frontend/style.css">
 </head>
 <body>
+  <div id="auth-container" style="display: none; padding: 20px; max-width: 400px; margin: auto; text-align: center;">
+    <h2>Attendance Tracker Login</h2>
+    <input type="text" id="auth-username" placeholder="Username" style="margin-bottom:10px; width: 100%; padding: 8px;">
+    <input type="password" id="auth-password" placeholder="Password" style="margin-bottom:10px; width: 100%; padding: 8px;">
+    <div style="display: flex; gap: 10px; justify-content: center;">
+        <button onclick="handleAuth('login')" style="padding: 10px; cursor: pointer;">Login</button>
+        <button onclick="handleAuth('register')" style="padding: 10px; cursor: pointer;">Register</button>
+    </div>
+</div>
+
+<!-- Wrap your entire existing app inside this hidden container -->
+<div id="app-container" style="display: none;">
+    <!-- Add this logout button near your top header -->
+    <div style="text-align: right; padding: 10px;">
+        <span id="user-greeting" style="margin-right: 15px; font-weight: bold;"></span>
+        <button onclick="logout()" style="padding: 5px 10px; cursor: pointer;">Logout</button>
+    </div>
+
+
   <div id="toast-container"></div>
 
   <div class="container">
@@ -129,5 +148,6 @@
   </div>
 
   <script src="/frontend/script.js"></script>
+  </div>
 </body>
 </html>

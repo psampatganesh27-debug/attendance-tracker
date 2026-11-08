@@ -231,7 +231,61 @@ async function markAttendance(logId, status) {
 
 //WITH EXTRA CLASSES
 
+// --- AUTHENTICATION LOGIC ---
+async function checkAuthStatus() {
+    try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+            const data = await res.json();
+            document.getElementById('auth-container').style.display = 'none';
+            document.getElementById('app-container').style.display = 'block';
+            document.getElementById('user-greeting').textContent = `Logged in as ${data.username}`;
+            
+            // Boot the app data only if authenticated
+            fetchDashboard();
+            fetchTodayClasses();
+            populateSubjectDropdowns();
+        } else {
+            document.getElementById('auth-container').style.display = 'block';
+            document.getElementById('app-container').style.display = 'none';
+        }
+    } catch (e) {
+        console.error("Auth check failed");
+    }
+}
+
+async function handleAuth(action) {
+    const username = document.getElementById('auth-username').value;
+    const password = document.getElementById('auth-password').value;
+    
+    if (!username || !password) return showToast("Enter both username and password", "error");
+
+    const res = await fetch(`/api/auth/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+    });
+    
+    const data = await res.json();
+    if (res.ok) {
+        showToast(data.message, "success");
+        checkAuthStatus(); // Reload the app view
+    } else {
+        showToast(data.error, "error");
+    }
+}
+
+async function logout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    document.getElementById('auth-username').value = '';
+    document.getElementById('auth-password').value = '';
+    checkAuthStatus(); // Reverts to login screen
+}
+
+
 document.addEventListener("DOMContentLoaded", () => {
+  // Check session cookie before loading data
+  checkAuthStatus();
   // Set default date for Extra Class to Today
   const extraDateInput = document.getElementById("extra-class-date");
   if (extraDateInput) {
@@ -407,6 +461,8 @@ async function populateSubjectDropdowns() {
     const res = await fetch("/api/dashboard");
     const subjects = await res.json();
     
+    if (res.status === 401) return checkAuthStatus();
+
     // 1. Build the HTML string for the options exactly once
     let optionsHTML = '<option value="">-- Choose a Subject --</option>';
     subjects.forEach(sub => {
@@ -441,6 +497,8 @@ async function fetchDashboard() {
   const container = document.getElementById("subject-cards-list");
   container.innerHTML = "";
 
+  if (res.status === 401) return checkAuthStatus();
+
   if (data.length === 0) {
     container.innerHTML = '<p class="empty-state">No subjects added yet.</p>';
     return;
@@ -466,6 +524,8 @@ async function fetchTodayClasses() {
   const data = await res.json();
   const container = document.getElementById("today-classes-list");
   container.innerHTML = "";
+
+  if (res.status === 401) return checkAuthStatus();
 
   if (data.length === 0) {
     container.innerHTML = '<p class="empty-state">No classes scheduled for today.</p>';
