@@ -17,7 +17,8 @@
       
       <div class="auth-form">
         <input type="text" id="auth-username" placeholder="Student Username" required>
-        <input type="password" id="auth-password" placeholder="Password" required>
+        <!-- Swapped password for a PIN input that triggers the numeric keyboard on mobile -->
+        <input type="password" id="auth-pin" placeholder="4-Digit PIN" inputmode="numeric" pattern="[0-9]*" maxlength="4" required>
         
         <div class="auth-actions">
           <button onclick="handleAuth('login')" class="btn-primary">Log In</button>
@@ -128,7 +129,10 @@
 
           <section class="setup-block danger-zone">
             <label>⚠️ Danger Zone</label>
-            <button type="button" id="btn-reset-db" class="btn-danger">Start Fresh (Wipe Data)</button>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <button type="button" id="btn-reset-db" class="btn-danger">Start Fresh (Wipe Data)</button>
+              <button type="button" id="btn-delete-account" class="btn-danger" style="background: transparent; border-style: dashed;">Delete Account</button>
+            </div>
           </section>
 
         </div>
@@ -136,13 +140,6 @@
 
       <!-- Right Main Area: Dashboard -->
       <div class="main-dashboard">
-        
-        <section class="dashboard-section">
-          <h2>📌 Today's Schedule</h2>
-          <div id="today-classes-list" class="card-grid">
-            <p class="empty-state">No classes scheduled for today. Enjoy your day! 🎉</p>
-          </div>
-        </section>
 
         <section class="dashboard-section">
           <h2>📊 Attendance Overview</h2>

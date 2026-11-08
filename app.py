@@ -168,12 +168,17 @@ def index():
 @app.route('/api/auth/register', methods=['POST'])
 def register():
     data = request.json
-    username, password = data.get('username'), data.get('password')
-    if not username or not password: return jsonify({"error": "Missing fields"}), 400
+    username, pin = data.get('username'), data.get('pin')
+    
+    if not username or not pin: 
+        return jsonify({"error": "Missing fields"}), 400
+    if not pin.isdigit() or len(pin) < 4: 
+        return jsonify({"error": "PIN must be at least 4 digits"}), 400
     
     db = get_db()
     try:
-        db.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (username, generate_password_hash(password)))
+        # We still store it in the password_hash column to avoid database schema migrations
+        db.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (username, generate_password_hash(pin)))
         user = db.fetchone("SELECT * FROM users WHERE username = ?", (username,))
         login_user(User(user['id'], user['username']))
         return jsonify({"message": "Registered successfully"})
@@ -189,10 +194,30 @@ def login():
     user = db.fetchone("SELECT * FROM users WHERE username = ?", (data.get('username'),))
     db.close()
     
-    if user and check_password_hash(user['password_hash'], data.get('password')):
+    if user and check_password_hash(user['password_hash'], data.get('pin')):
         login_user(User(user['id'], user['username']))
         return jsonify({"message": "Logged in successfully"})
     return jsonify({"error": "Invalid credentials"}), 401
+
+@app.route('/api/auth/delete-account', methods=['POST'])
+@login_required
+def delete_account():
+    db = get_db()
+    try:
+        # Purge all data owned by the user
+        db.execute("DELETE FROM attendance_logs WHERE user_id = ?", (current_user.id,))
+        db.execute("DELETE FROM holidays WHERE user_id = ?", (current_user.id,))
+        db.execute("DELETE FROM schedule WHERE user_id = ?", (current_user.id,))
+        db.execute("DELETE FROM subjects WHERE user_id = ?", (current_user.id,))
+        # Delete the user account itself
+        db.execute("DELETE FROM users WHERE id = ?", (current_user.id,))
+        
+        logout_user()
+        return jsonify({"message": "Account and all data permanently deleted."}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
 
 @app.route('/api/auth/logout', methods=['POST'])
 @login_required

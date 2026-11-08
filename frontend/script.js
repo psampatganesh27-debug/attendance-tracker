@@ -256,14 +256,15 @@ async function checkAuthStatus() {
 
 async function handleAuth(action) {
     const username = document.getElementById('auth-username').value;
-    const password = document.getElementById('auth-password').value;
+    const pin = document.getElementById('auth-pin').value;
     
-    if (!username || !password) return showToast("Enter both username and password", "error");
+    if (!username || !pin) return showToast("Enter both username and PIN", "error");
+    if (!/^\d{4}$/.test(pin)) return showToast("PIN must be exactly 4 digits", "error");
 
     const res = await fetch(`/api/auth/${action}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username, pin }) // Payload now sends 'pin'
     });
     
     const data = await res.json();
@@ -278,7 +279,7 @@ async function handleAuth(action) {
 async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
     document.getElementById('auth-username').value = '';
-    document.getElementById('auth-password').value = '';
+    document.getElementById('auth-pin').value = '';
     checkAuthStatus(); // Reverts to login screen
 }
 
@@ -437,6 +438,23 @@ document.addEventListener("DOMContentLoaded", () => {
       showToast("Failed to reset database", "error");
     }
   });
+
+  // Handle Delete Account Button (MOVED INSIDE)
+  const btnDeleteAccount = document.getElementById("btn-delete-account");
+  if (btnDeleteAccount) {
+    btnDeleteAccount.addEventListener("click", async () => {
+      const confirmDelete = confirm("CRITICAL WARNING: This will permanently delete your account and ALL your data. This cannot be undone. Proceed?");
+      if (!confirmDelete) return;
+
+      const res = await fetch("/api/auth/delete-account", { method: "POST" });
+      if (res.ok) {
+        showToast("Account deleted forever.", "info");
+        checkAuthStatus(); 
+      } else {
+        showToast("Failed to delete account", "error");
+      }
+    });
+  }
 });
 
 // Toast Notification Handler
