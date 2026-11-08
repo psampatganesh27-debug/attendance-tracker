@@ -536,7 +536,12 @@ from flask import Flask, request, jsonify, render_template
 import sqlite3
 import requests
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+
+def get_ist_now():
+    """Forces the server time to Asia/Kolkata (UTC + 5:30)"""
+    ist_offset = timedelta(hours=5, minutes=30)
+    return datetime.now(timezone.utc) + ist_offset
 
 app = Flask(__name__, static_folder='frontend', template_folder='frontend')
 
@@ -784,7 +789,7 @@ def get_dashboard():
 @app.route('/api/today', methods=['GET'])
 def get_today_classes():
     # Accepts an optional query param like /api/today?date=2026-07-27
-    target_date = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
+    target_date = request.args.get('date', get_ist_now().strftime('%Y-%m-%d'))
     db = get_db()
 
     classes = db.fetchall("""
@@ -816,7 +821,7 @@ def update_attendance(log_id):
 def add_extra_class():
     data = request.json
     subject_id = data.get('subject_id')
-    class_date = data.get('class_date', datetime.now().strftime('%Y-%m-%d'))
+    class_date = data.get('class_date', get_ist_now().strftime('%Y-%m-%d'))
     status = data.get('status', 'PENDING')
 
     if not subject_id:
@@ -886,39 +891,48 @@ def add_holiday():
 @app.route('/api/generate-semester', methods=['POST'])
 def generate_semester():
     data = request.json
-    start_date = datetime.strptime(data['start_date'], '%Y-%m-%d')
-    end_date = datetime.strptime(data['end_date'], '%Y-%m-%d')
-
+    start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
+    end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
+    
     db = get_db()
-
+    
     try:
+        # 1. Clean up existing PENDING classes in this range to prevent duplicates
+        db.execute("""
+            DELETE FROM attendance_logs 
+            WHERE class_date BETWEEN ? AND ? AND status = 'PENDING'
+        """, (data['start_date'], data['end_date']))
+
+        # 2. Fetch required data for generation
         schedules = db.fetchall("SELECT subject_id, day_of_week FROM schedule")
-        holidays_raw = db.fetchall("SELECT holiday_date FROM holidays")
-        holidays = {r['holiday_date'] for r in holidays_raw}
-
-        statements = [
-            ("DELETE FROM attendance_logs WHERE class_date BETWEEN ? AND ? AND status = 'PENDING'", (data['start_date'], data['end_date']))
-        ]
-
-        curr_date = start_date
-        while curr_date <= end_date:
-            date_str = curr_date.strftime('%Y-%m-%d')
-            day_of_week = curr_date.weekday()
-
-            if date_str not in holidays:
+        # Fetch all blackout dates directly from the schema
+        holidays_data = db.fetchall("SELECT holiday_date FROM holidays")
+        blackout_dates = {row['holiday_date'] for row in holidays_data}
+        
+        current_date = start_date
+        logs_to_insert = []
+        
+        # 3. Loop through every date in the semester
+        while current_date <= end_date:
+            current_date_str = current_date.strftime('%Y-%m-%d')
+            day_of_week = current_date.weekday()
+            
+            # 4. If it is NOT an exam/holiday, schedule the classes
+            if current_date_str not in blackout_dates:
                 for sched in schedules:
                     if sched['day_of_week'] == day_of_week:
-                        statements.append((
-                            "INSERT INTO attendance_logs (subject_id, class_date, status) VALUES (?, ?, ?)",
-                            (sched['subject_id'], date_str, 'PENDING')
-                        ))
+                        logs_to_insert.append((sched['subject_id'], current_date_str, 'PENDING'))
             
-            curr_date += timedelta(days=1)
+            current_date += timedelta(days=1)
+            
+        # 5. Batch insert all generated classes
+        if logs_to_insert:
+            db.execute_batch([
+                ("INSERT INTO attendance_logs (subject_id, class_date, status) VALUES (?, ?, ?)", log) 
+                for log in logs_to_insert
+            ])
 
-        # Batch execute all insertions in 1 HTTP payload
-        db.execute_batch(statements)
-
-        return jsonify({"message": f"Generated schedules from {data['start_date']} to {data['end_date']}"})
+        return jsonify({"message": f"Generated schedules from {data['start_date']} to {data['end_date']}."})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
@@ -941,7 +955,7 @@ def reset_database():
 
 @app.route('/api/history/<int:subject_id>', methods=['GET'])
 def get_subject_history(subject_id):
-    today_str = datetime.now().strftime('%Y-%m-%d')
+    today_str = get_ist_now().strftime('%Y-%m-%d')
     db = get_db()
     
     # Fetch all logs for the selected subject up to today, sorted newest first

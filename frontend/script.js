@@ -485,44 +485,52 @@ async function fetchTodayClasses() {
       <p>Status: <strong>${cls.status}</strong></p>
       <div class="status-btns">
         <button class="btn-present ${cls.status === 'PRESENT' ? 'active' : ''}" 
-                onclick="handleMarkAttendance(${cls.log_id}, 'PRESENT', '${cls.status}')">Present</button>
+                onclick="handleMarkAttendance(${cls.log_id}, 'PRESENT', '${cls.status}', this)">Present</button>
         <button class="btn-absent ${cls.status === 'ABSENT' ? 'active' : ''}" 
-                onclick="handleMarkAttendance(${cls.log_id}, 'ABSENT', '${cls.status}')">Absent</button>
+                onclick="handleMarkAttendance(${cls.log_id}, 'ABSENT', '${cls.status}', this)">Absent</button>
         <button class="btn-cancel ${cls.status === 'CANCELLED' ? 'active' : ''}" 
-                onclick="handleMarkAttendance(${cls.log_id}, 'CANCELLED', '${cls.status}')">Cancel</button>
+                onclick="handleMarkAttendance(${cls.log_id}, 'CANCELLED', '${cls.status}', this)">Cancel</button>
       </div>
     `;
     container.appendChild(card);
   });
 }
 
-// Handler for attendance updates
-async function handleMarkAttendance(logId, newStatus, currentStatus) {
-  if (currentStatus === newStatus) {
-    showToast(`Already marked as ${newStatus}`, "info");
-    return;
-  }
+async function handleMarkAttendance(logId, newStatus, currentStatus, buttonElement) {
+  if (currentStatus === newStatus) return;
 
-  if (currentStatus !== 'PENDING') {
-    showToast(`Updated from ${currentStatus} to ${newStatus}`, "info");
-  }
+  // 1. INSTANT UI UPDATE (Optimistic Rendering)
+  const parentDiv = buttonElement.parentElement;
+  // Remove 'active' class from all buttons in this row
+  parentDiv.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+  // Add 'active' class to the clicked button immediately
+  buttonElement.classList.add('active');
 
-  await markAttendance(logId, newStatus);
-}
-
-// Update class attendance status
-async function markAttendance(logId, status) {
-  const res = await fetch(`/api/attendance/${logId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status })
+  // Update the function call injected in the HTML so subsequent clicks work without refreshing
+  parentDiv.querySelectorAll('button').forEach(btn => {
+      const btnStatus = btn.textContent.toUpperCase();
+      btn.setAttribute('onclick', `handleMarkAttendance(${logId}, '${btnStatus}', '${newStatus}', this)`);
   });
-  if (res.ok) {
-    showToast(`Marked as ${status}`, "success");
-    fetchTodayClasses();
-    fetchDashboard();
-  } else {
-    showToast("Failed to update status", "error");
+
+  // 2. BACKGROUND DATABASE WRITE
+  try {
+    const res = await fetch(`/api/attendance/${logId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus })
+    });
+
+    if (res.ok) {
+      // Quietly update the dashboard percentages in the background
+      fetchDashboard(); 
+    } else {
+      throw new Error("Server rejected update");
+    }
+  } catch (error) {
+    // 3. ROLLBACK ON FAILURE
+    console.error(error);
+    showToast("Network error. Reverting status.", "error");
+    fetchTodayClasses(); // Reload the true state from the database
   }
 }
 
