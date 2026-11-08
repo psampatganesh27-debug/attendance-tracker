@@ -947,7 +947,7 @@ def reset_database():
         db.execute("DROP TABLE IF EXISTS schedule")
         db.execute("DROP TABLE IF EXISTS subjects")
         get_db()
-        return jsonify({"message": "Database successfully reset!"}), 200
+        return jsonify({"message": "Database reset successful!"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
