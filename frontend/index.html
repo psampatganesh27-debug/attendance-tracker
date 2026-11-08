@@ -3,151 +3,171 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Attendance Tracker</title>
+  <title>Tracker | Terminal Environment</title>
   <link rel="stylesheet" href="/frontend/style.css">
 </head>
 <body>
-  <div id="auth-container" style="display: none; padding: 20px; max-width: 400px; margin: auto; text-align: center;">
-    <h2>Attendance Tracker Login</h2>
-    <input type="text" id="auth-username" placeholder="Username" style="margin-bottom:10px; width: 100%; padding: 8px;">
-    <input type="password" id="auth-password" placeholder="Password" style="margin-bottom:10px; width: 100%; padding: 8px;">
-    <div style="display: flex; gap: 10px; justify-content: center;">
-        <button onclick="handleAuth('login')" style="padding: 10px; cursor: pointer;">Login</button>
-        <button onclick="handleAuth('register')" style="padding: 10px; cursor: pointer;">Register</button>
-    </div>
-</div>
 
-<!-- Wrap your entire existing app inside this hidden container -->
-<div id="app-container" style="display: none;">
-    <!-- Add this logout button near your top header -->
-    <div style="text-align: right; padding: 10px;">
-        <span id="user-greeting" style="margin-right: 15px; font-weight: bold;"></span>
-        <button onclick="logout()" style="padding: 5px 10px; cursor: pointer;">Logout</button>
-    </div>
-
-
-  <div id="toast-container"></div>
-
-  <div class="container">
-    <header>
-      <h1>Attendance Tracker</h1>
-      <p>Target Minimum: <strong>80%</strong></p>
-    </header>
-
-    <!-- Setup Form -->
-    <details class="setup-card">
-      <summary>⚙️ Semester Setup & Configuration</summary>
-      <div class="setup-content">
-        <section class="setup-group">
-          <h3>1. Add Subjects</h3>
-          <form id="add-subject-form">
-            <input type="text" id="subject-name" placeholder="Subject Name (e.g. Data Structures)" required>
-            <button type="submit">Add Subject</button>
-          </form>
-        </section>
-
-        <!-- 2. Add Holiday -->
-        <section class="setup-group">
-          <h3>2. Add Holiday / Vacation Range</h3>
-          <form id="add-holiday-form">
-            <label>From: <input type="date" id="holiday-start" required></label>
-            <label>To: <input type="date" id="holiday-end"></label>
-            <input type="text" id="holiday-desc" placeholder="Reason (e.g. Diwali Break)">
-            <button type="submit">Add Holiday Range</button>
-          </form>
-        </section>
-
-        <!-- 3. Map Schedule (Weekly) -->
-        <section class="setup-group">
-          <h3>3. Map Schedule (Weekly)</h3>
-          <form id="add-schedule-form">
-            <select id="sched-subject-id" class="subject-dropdown" required>
-              <option value="">Select Subject</option>
-            </select>
-            <select id="sched-day" required>
-             <option value="0">Monday</option>
-             <option value="1">Tuesday</option>
-             <option value="2">Wednesday</option>
-             <option value="3">Thursday</option>
-             <option value="4">Friday</option>
-             <option value="5">Saturday</option>
-             <option value="6">Sunday</option>
-            </select>
-            <label>Classes per day: 
-              <input type="number" id="sched-count" min="1" max="10" value="1" style="width: 60px;" required>
-            </label>
-            <button type="submit">Add Schedule</button>
-          </form>
-        </section>
-
-        <!-- 4. Generate Semester -->
-        <section class="setup-group">
-          <h3>4. Generate Semester Logs</h3>
-          <form id="generate-semester-form">
-            <label>Start Date: <input type="date" id="start-date" required></label>
-            <label>End Date: <input type="date" id="end-date" required></label>
-            <button type="submit">Generate Logs</button>
-          </form>
-        </section>
-
-        <!-- 5. Add Extra Class -->
-        <section class="setup-group">
-          <h3>5. Add Extra / Makeup Class</h3>
-          <form id="add-extra-class-form">
-            <select id="extra-subject-id" class="subject-dropdown" required>
-              <option value="">Select Subject</option>
-            </select>
-            <label>Date: <input type="date" id="extra-class-date" required></label>
-            <select id="extra-class-status">
-              <option value="PENDING">Status: Pending</option>
-              <option value="PRESENT">Status: Present</option>
-              <option value="ABSENT">Status: Absent</option>
-            </select>
-            <button type="submit" style="background-color: #059669;">Log Extra Class</button>
-          </form>
-        </section>
-
-        <!-- 6. Danger Zone: Reset Database -->
-        <section class="setup-group">
-          <h3 style="color: #ef4444;">6. Danger Zone</h3>
-          <button type="button" id="btn-reset-db" style="background-color: #dc2626;">Wipe & Reset Database</button>
-        </section>
+  <!-- AUTHENTICATION ENVIRONMENT -->
+  <div id="auth-container" class="auth-wrapper">
+    <div class="terminal-window">
+      <div class="terminal-header">
+        <span class="dot red"></span>
+        <span class="dot yellow"></span>
+        <span class="dot green"></span>
+        <span class="term-title">auth_module.sh</span>
       </div>
-    </details>
-
-    <!-- Today's Attendance Section -->
-    <section class="dashboard-section">
-      <h2>Today's Classes</h2>
-      <div id="today-classes-list" class="grid-container">
-        <p class="empty-state">Loading today's classes...</p>
-      </div>
-    </section>
-
-    <details class="setup-card" style="margin-top: 20px;">
-    <summary>✏️ Edit Past Attendance</summary>
-    <div style="padding: 15px;">
-        <label for="history-subject-id">Select Subject:</label>
-        <select id="history-subject-id" onchange="loadHistory()" style="width: 100%; margin-bottom: 15px; padding: 8px;">
-            <option value="">-- Choose a Subject --</option>
-        </select>
-        
-        <div id="history-list">
-            <p style="color: gray; font-size: 0.9em;">Select a subject to view past records.</p>
+      <div class="terminal-body">
+        <h2>System Login</h2>
+        <input type="text" id="auth-username" placeholder="username" required>
+        <input type="password" id="auth-password" placeholder="password" required>
+        <div class="auth-actions">
+          <button onclick="handleAuth('login')" class="btn-primary">Execute</button>
+          <button onclick="handleAuth('register')" class="btn-secondary">Initialize User</button>
         </div>
-    </div>
-</details>
-
-
-    <!-- Subject Health Cards -->
-    <section class="dashboard-section">
-      <h2>Subject Dashboard</h2>
-      <div id="subject-cards-list" class="grid-container">
-        <p class="empty-state">Loading summary data...</p>
       </div>
-    </section>
+    </div>
+  </div>
+
+  <!-- MAIN APPLICATION WORKSPACE -->
+  <div id="app-container" class="hidden">
+    
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+      <div class="nav-left">
+        <h1>Tracker.exe</h1>
+        <span class="target-badge">Target Limit: >=80%</span>
+      </div>
+      <div class="nav-right">
+        <span id="user-greeting" class="user-id"></span>
+        <button onclick="logout()" class="btn-danger-outline">Terminate Session</button>
+      </div>
+    </nav>
+
+    <div id="toast-container" class="toast-stack"></div>
+
+    <!-- IDE-Style Layout (Sidebar + Main Content) -->
+    <main class="dashboard-grid">
+      
+      <!-- Left Sidebar: Configuration & Forms -->
+      <aside class="config-panel">
+        <div class="panel-header">
+          <h2>Configuration</h2>
+        </div>
+        <div class="panel-scroll">
+          
+          <section class="form-group">
+            <label>1. Initialize Subject</label>
+            <form id="add-subject-form">
+              <input type="text" id="subject-name" placeholder="Subject Name (e.g. DSD)" required>
+              <button type="submit" class="btn-primary">Inject</button>
+            </form>
+          </section>
+
+          <section class="form-group">
+            <label>2. Define Blackout Dates</label>
+            <form id="add-holiday-form">
+              <div class="date-row">
+                <input type="date" id="holiday-start" required title="Start Date">
+                <input type="date" id="holiday-end" title="End Date">
+              </div>
+              <input type="text" id="holiday-desc" placeholder="Reason (e.g. Exams)">
+              <button type="submit" class="btn-primary">Write Record</button>
+            </form>
+          </section>
+
+          <section class="form-group">
+            <label>3. Map Weekly Schedule</label>
+            <form id="add-schedule-form">
+              <select id="sched-subject-id" class="subject-dropdown" required>
+                <option value="">-- Await Subject --</option>
+              </select>
+              <div class="row">
+                <select id="sched-day" required>
+                 <option value="0">Mon</option>
+                 <option value="1">Tue</option>
+                 <option value="2">Wed</option>
+                 <option value="3">Thu</option>
+                 <option value="4">Fri</option>
+                 <option value="5">Sat</option>
+                 <option value="6">Sun</option>
+                </select>
+                <input type="number" id="sched-count" min="1" max="10" value="1" required title="Classes per day">
+              </div>
+              <button type="submit" class="btn-primary">Map Block</button>
+            </form>
+          </section>
+
+          <section class="form-group">
+            <label>4. Generate Semester Logs</label>
+            <form id="generate-semester-form">
+              <div class="date-row">
+                <input type="date" id="start-date" required title="Start Date">
+                <input type="date" id="end-date" required title="End Date">
+              </div>
+              <button type="submit" class="btn-primary">Compile Timeline</button>
+            </form>
+          </section>
+
+          <section class="form-group">
+            <label>5. Log Manual Override</label>
+            <form id="add-extra-class-form">
+              <select id="extra-subject-id" class="subject-dropdown" required>
+                <option value="">-- Await Subject --</option>
+              </select>
+              <div class="row">
+                <input type="date" id="extra-class-date" required title="Date">
+                <select id="extra-class-status">
+                  <option value="PENDING">Pending</option>
+                  <option value="PRESENT">Present</option>
+                  <option value="ABSENT">Absent</option>
+                </select>
+              </div>
+              <button type="submit" class="btn-success">Force Insert</button>
+            </form>
+          </section>
+
+          <section class="form-group danger-zone">
+            <label>6. Critical Action</label>
+            <button type="button" id="btn-reset-db" class="btn-danger">Drop Tables (Wipe Data)</button>
+          </section>
+
+        </div>
+      </aside>
+
+      <!-- Right Main Area: Data Visualization -->
+      <div class="data-panel">
+        
+        <section class="content-section">
+          <h2>Today's Execution Stack</h2>
+          <div id="today-classes-list" class="data-grid">
+            <p class="empty-state">No execution tasks for today.</p>
+          </div>
+        </section>
+
+        <section class="content-section">
+          <h2>System Health Overview</h2>
+          <div id="subject-cards-list" class="data-grid">
+            <p class="empty-state">Awaiting subject data...</p>
+          </div>
+        </section>
+
+        <section class="content-section">
+          <h2>Database History Query</h2>
+          <div class="history-controls">
+            <select id="history-subject-id" onchange="loadHistory()" class="history-select">
+              <option value="">-- Target Subject --</option>
+            </select>
+          </div>
+          <div id="history-list" class="history-logs">
+            <p class="empty-state">Select subject to query logs.</p>
+          </div>
+        </section>
+
+      </div>
+    </main>
   </div>
 
   <script src="/frontend/script.js"></script>
-  </div>
 </body>
 </html>
