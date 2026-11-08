@@ -185,10 +185,11 @@ h1, h2, h3, h4 {
   font-size: 1.1rem;
   color: var(--text-main);
 }
-
 .sidebar-scroll {
   padding: 20px;
+  padding-bottom: 40px; /* Gives breathing room at the bottom */
   overflow-y: auto;
+  overflow-x: hidden; /* Kills the horizontal scrollbar */
   flex: 1;
 }
 
@@ -226,6 +227,12 @@ input, select {
 .input-row {
   display: flex;
   gap: 10px;
+}
+
+/* Forces side-by-side inputs to shrink properly without overflowing */
+.input-row input, .input-row select {
+  flex: 1;
+  min-width: 0; 
 }
 
 input:focus, select:focus {
