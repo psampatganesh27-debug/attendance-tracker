@@ -109,7 +109,7 @@ h1, h2, h3, h4 {
 /* LAYOUT: DESKTOP */
 .dashboard-layout {
   display: grid;
-  grid-template-columns: 1fr 340px; /* Overview First, Sidebar on Right */
+  grid-template-columns: 1fr 340px;
   gap: 30px;
   max-width: 1400px;
   margin: 0 auto;
@@ -146,11 +146,25 @@ h1, h2, h3, h4 {
   justify-content: space-between;
   align-items: center;
   user-select: none;
+  position: relative;
 }
 
 .sidebar-header::-webkit-details-marker { display: none; }
 .sidebar-header h2 { font-size: 1.1rem; color: var(--text-main); }
 .accordion-hint { font-size: 0.75rem; color: var(--text-muted); }
+
+/* Rotating indicator arrow for the sidebar accordion */
+.sidebar-header::after {
+  content: "▾";
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  transition: transform 0.25s ease;
+  margin-left: 8px;
+}
+
+details[open] .sidebar-header::after {
+  transform: rotate(180deg);
+}
 
 .sidebar-scroll {
   padding: 20px;
@@ -206,6 +220,11 @@ button {
   border: none;
 }
 
+/* Tactile feedback on click/press */
+button:active {
+  transform: scale(0.97) !important;
+}
+
 .btn-primary { background: var(--primary-color); color: #fff; }
 .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
 
@@ -244,15 +263,18 @@ button {
 
 .pct {
   font-family: var(--font-heading);
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   font-weight: 700;
   color: var(--primary-color);
-  margin: 10px 0 15px 0;
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
-/* Color-coded left edges and text for subject cards */
+/* Color-coded edges and soft gradient fills for subject cards */
 .card.SAFE {
   border-left: 5px solid var(--success-color);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, var(--bg-card) 60%);
 }
 .card.SAFE .message { 
   color: var(--success-color); 
@@ -260,6 +282,7 @@ button {
 
 .card.CRITICAL {
   border-left: 5px solid var(--danger-color);
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.06) 0%, var(--bg-card) 60%);
 }
 .card.CRITICAL .message { 
   color: var(--danger-color); 
@@ -268,6 +291,8 @@ button {
 .card.NO_CLASSES {
   border-left: 5px solid var(--border-soft);
 }
+
+.card .message { font-size: 0.85rem; margin-top: 10px; font-weight: 500; }
 
 .empty-state {
   grid-column: 1 / -1;
@@ -279,6 +304,19 @@ button {
   border: 1px dashed var(--border-soft);
 }
 
+/* Skeleton loader for smoother initial loads */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.loading-skeleton {
+  animation: pulse 1.5s ease-in-out infinite;
+  background: var(--bg-card);
+  border-radius: 14px;
+  height: 120px;
+}
+
 /* STATUS BUTTONS */
 .status-btns { display: flex; gap: 8px; margin-top: 15px; }
 .status-btns button {
@@ -288,6 +326,9 @@ button {
   background: var(--bg-main);
   color: var(--text-muted);
   border: 1px solid var(--border-soft);
+}
+.status-btns button:active {
+  transform: scale(0.94) !important;
 }
 .status-btns button:hover { background: var(--bg-hover); color: var(--text-main); }
 .status-btns button.active { font-weight: 600; border-color: transparent; }
@@ -347,7 +388,6 @@ button {
    MOBILE-FIRST APP SHELL (<= 950px)
 ========================================= */
 @media (max-width: 950px) {
-  /* Clean App Container */
   .dashboard-layout {
     display: flex;
     flex-direction: column;
@@ -355,7 +395,6 @@ button {
     gap: 20px;
   }
 
-  /* Compact 2-Line Header */
   .top-nav {
     padding: 10px 14px;
     flex-wrap: wrap;
@@ -400,7 +439,6 @@ button {
     border-radius: 6px;
   }
 
-  /* Section Spacing */
   .main-dashboard {
     gap: 20px;
   }
@@ -410,13 +448,11 @@ button {
     margin-bottom: 12px;
   }
 
-  /* Compact Card Grid (Two columns on mobile for quick scanning) */
   .card-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
 
-  /* Card Density */
   .card {
     padding: 14px 12px;
     border-radius: 14px;
@@ -446,7 +482,6 @@ button {
     line-height: 1.25;
   }
 
-  /* Single column for Today's schedule so buttons remain tap-friendly */
   #today-classes-list.card-grid {
     grid-template-columns: 1fr;
     gap: 10px;
@@ -462,7 +497,6 @@ button {
     font-size: 0.75rem;
   }
 
-  /* History list */
   .history-list-container .card {
     flex-direction: column;
     padding: 12px;
@@ -470,7 +504,6 @@ button {
     align-items: stretch;
   }
 
-  /* Sidebar Setup placed below as a neat accordion */
   .setup-sidebar {
     border-radius: 14px;
     margin-top: 5px;
