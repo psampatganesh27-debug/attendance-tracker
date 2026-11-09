@@ -125,28 +125,32 @@ class DBConnection:
         if self.mode == "SQLITE": self.conn.close()
 
 def get_db():
-    db = DBConnection()
-    try:
-        tbl = db.fetchone("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
-        if not tbl:
-            db.execute("DROP TABLE IF EXISTS attendance_logs")
-            db.execute("DROP TABLE IF EXISTS holidays")
-            db.execute("DROP TABLE IF EXISTS schedule")
-            db.execute("DROP TABLE IF EXISTS subjects")
-            
-            db.execute("CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password_hash TEXT, target_percentage REAL DEFAULT 80.0)")
-            db.execute("CREATE TABLE subjects (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, name TEXT, target_percentage REAL, UNIQUE(user_id, name))")
-            db.execute("CREATE TABLE schedule (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, subject_id INTEGER, day_of_week INTEGER)")
-            db.execute("CREATE TABLE holidays (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, holiday_date TEXT, description TEXT, UNIQUE(user_id, holiday_date))")
-            db.execute("CREATE TABLE attendance_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, subject_id INTEGER, class_date TEXT, status TEXT)")
-        else:
-            try:
-                db.execute("ALTER TABLE users ADD COLUMN target_percentage REAL DEFAULT 80.0")
-            except Exception:
-                pass
-    except Exception as e:
-        print(f"Table init error: {e}")
-    return db
+    # Only open the connection, do not run schema checks here
+    return DBConnection()
+
+@app.before_request
+def setup_database_once():
+    # Only run the table checks once per server boot
+    if not getattr(app, '_database_initialized', False):
+        db = get_db()
+        try:
+            tbl = db.fetchone("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
+            if not tbl:
+                db.execute("CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password_hash TEXT, target_percentage REAL DEFAULT 80.0)")
+                db.execute("CREATE TABLE subjects (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, name TEXT, target_percentage REAL, UNIQUE(user_id, name))")
+                db.execute("CREATE TABLE schedule (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, subject_id INTEGER, day_of_week INTEGER)")
+                db.execute("CREATE TABLE holidays (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, holiday_date TEXT, description TEXT, UNIQUE(user_id, holiday_date))")
+                db.execute("CREATE TABLE attendance_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, subject_id INTEGER, class_date TEXT, status TEXT)")
+            else:
+                try:
+                    db.execute("ALTER TABLE users ADD COLUMN target_percentage REAL DEFAULT 80.0")
+                except Exception:
+                    pass
+        except Exception as e:
+            print(f"Table init error: {e}")
+        finally:
+            db.close()
+        app._database_initialized = True
 
 def calculate_stats(attended, conducted, total_semester, target_pct=0.80):
     pct_display = int(round(target_pct * 100))
@@ -199,10 +203,10 @@ def register():
     try:
         db.execute(
             "INSERT INTO users (username, password_hash, target_percentage) VALUES (?, ?, ?)", 
-            (username, generate_password_hash(pin), target)
+            (username, generate_password_hash(pin, method='pbkdf2:sha256:10000'), target)
         )
         user = db.fetchone("SELECT * FROM users WHERE username = ?", (username,))
-        login_user(User(user['id'], user['username'], target))
+        login_user(User(user['id'], user['username'], target), remember=True)
         return jsonify({"message": "Registered successfully", "target_percentage": target})
     except Exception:
         return jsonify({"error": "Username already exists"}), 400
@@ -223,7 +227,7 @@ def login():
     # Check if the PIN matches
     if check_password_hash(user['password_hash'], data.get('pin')):
         target = user.get('target_percentage', 80.0) or 80.0
-        login_user(User(user['id'], user['username'], target))
+        login_user(User(user['id'], user['username'], target), remember=True)
         return jsonify({"message": "Logged in successfully", "target_percentage": target})
         
     # If account exists but PIN is wrong
