@@ -37,7 +37,6 @@
   <div id="app-container" style="display: none;">
     
     <!-- Top Navigation -->
-    <!-- Top Navigation -->
     <nav class="top-nav">
       <div class="nav-left">
         <span class="logo-icon">🎓</span>
@@ -106,8 +105,14 @@
               <label>🌴 2. Vacations & Exams</label>
               <form id="add-holiday-form">
                 <div class="input-row">
-                  <input type="date" id="holiday-start" required title="Start Date">
-                  <input type="date" id="holiday-end" title="End Date">
+                  <div class="date-field">
+                    <span class="field-tag">From</span>
+                    <input type="date" id="holiday-start" required title="Start Date">
+                  </div>
+                  <div class="date-field">
+                    <span class="field-tag">To</span>
+                    <input type="date" id="holiday-end" title="End Date">
+                  </div>
                 </div>
                 <input type="text" id="holiday-desc" placeholder="Reason (e.g. Diwali Break)">
                 <button type="submit" class="btn-primary">Add Dates</button>
@@ -140,8 +145,14 @@
               <label>🚀 4. Generate Classes</label>
               <form id="generate-semester-form">
                 <div class="input-row">
-                  <input type="date" id="start-date" required title="Semester Start">
-                  <input type="date" id="end-date" required title="Semester End">
+                  <div class="date-field">
+                    <span class="field-tag">Start</span>
+                    <input type="date" id="start-date" required title="Semester Start">
+                  </div>
+                  <div class="date-field">
+                    <span class="field-tag">End</span>
+                    <input type="date" id="end-date" required title="Semester End">
+                  </div>
                 </div>
                 <button type="submit" class="btn-primary">Generate Semester</button>
               </form>
