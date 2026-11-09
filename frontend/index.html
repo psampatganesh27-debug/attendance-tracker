@@ -17,7 +17,6 @@
       
       <div class="auth-form">
         <input type="text" id="auth-username" placeholder="Student Username" autocomplete="username" required>
-        <!-- Masked numeric input prevents Chrome breached credential warnings -->
         <input type="text" id="auth-pin" placeholder="4-Digit PIN" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="one-time-code" style="-webkit-text-security: disc;" required>
         
         <div id="target-pct-container" style="display: none; margin-bottom: 12px; text-align: left;">
@@ -26,8 +25,11 @@
         </div>
 
         <div class="auth-actions">
-          <button type="button" onclick="handleAuth('login')" class="btn-primary">Log In</button>
-          <button type="button" onclick="handleRegisterClick()" class="btn-secondary" id="btn-register-mode">Create Account</button>
+          <button type="button" id="btn-main-auth" onclick="submitAuth()" class="btn-primary">Log In</button>
+        </div>
+        
+        <div class="auth-toggle">
+          <span id="auth-toggle-text">New here? <a href="#" onclick="toggleAuthMode(); return false;">Create an account</a></span>
         </div>
       </div>
     </div>
@@ -59,14 +61,14 @@
         <section class="dashboard-section">
           <h2>📌 Today's Schedule</h2>
           <div id="today-classes-list" class="card-grid">
-            <p class="empty-state">No classes scheduled for today. Enjoy your day! 🎉</p>
+            <div class="loading-skeleton"></div>
           </div>
         </section>
 
         <section class="dashboard-section">
           <h2>📊 Attendance Overview</h2>
           <div id="subject-cards-list" class="card-grid">
-            <p class="empty-state">Add subjects and generate your semester to see stats.</p>
+            <div class="loading-skeleton"></div>
           </div>
         </section>
 
@@ -78,7 +80,7 @@
             </select>
           </div>
           <div id="history-list" class="history-list-container">
-            <p class="empty-state">Select a subject above to view past classes.</p>
+             <!-- Remains empty until a subject is selected -->
           </div>
         </section>
 

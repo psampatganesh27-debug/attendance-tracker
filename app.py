@@ -216,11 +216,18 @@ def login():
     user = db.fetchone("SELECT * FROM users WHERE username = ?", (data.get('username'),))
     db.close()
     
-    if user and check_password_hash(user['password_hash'], data.get('pin')):
+    # Check if the account actually exists
+    if not user:
+        return jsonify({"error": "No account found. Please create one."}), 404
+    
+    # Check if the PIN matches
+    if check_password_hash(user['password_hash'], data.get('pin')):
         target = user.get('target_percentage', 80.0) or 80.0
         login_user(User(user['id'], user['username'], target))
         return jsonify({"message": "Logged in successfully", "target_percentage": target})
-    return jsonify({"error": "Invalid credentials"}), 401
+        
+    # If account exists but PIN is wrong
+    return jsonify({"error": "Incorrect PIN."}), 401
 
 @app.route('/api/auth/delete-account', methods=['POST'])
 @login_required

@@ -1,17 +1,28 @@
 // --- AUTHENTICATION LOGIC ---
 let isRegisterMode = false;
 
-function handleRegisterClick() {
+function toggleAuthMode() {
+  isRegisterMode = !isRegisterMode;
   const targetContainer = document.getElementById('target-pct-container');
-  const btn = document.getElementById('btn-register-mode');
+  const mainBtn = document.getElementById('btn-main-auth');
+  const toggleText = document.getElementById('auth-toggle-text');
   
-  if (!isRegisterMode) {
-    isRegisterMode = true;
-    targetContainer.style.display = 'block';
-    btn.textContent = 'Submit Registration';
-    showToast("Enter target attendance % and submit", "info");
+  if (isRegisterMode) {
+      targetContainer.style.display = 'block';
+      mainBtn.textContent = 'Create Account';
+      toggleText.innerHTML = 'Already have an account? <a href="#" onclick="toggleAuthMode(); return false;">Log In</a>';
   } else {
-    handleAuth('register');
+      targetContainer.style.display = 'none';
+      mainBtn.textContent = 'Log In';
+      toggleText.innerHTML = 'New here? <a href="#" onclick="toggleAuthMode(); return false;">Create an account</a>';
+  }
+}
+
+function submitAuth() {
+  if (isRegisterMode) {
+      handleAuth('register');
+  } else {
+      handleAuth('login');
   }
 }
 
@@ -311,7 +322,7 @@ async function fetchDashboard() {
   container.innerHTML = "";
 
   if (data.length === 0) {
-    container.innerHTML = '<p class="empty-state">No subjects added yet.</p>';
+    container.innerHTML = '<p class="empty-state">Add subjects and generate your semester to see stats.</p>';
     return;
   }
 
@@ -337,7 +348,7 @@ async function fetchTodayClasses() {
   container.innerHTML = "";
 
   if (data.length === 0) {
-    container.innerHTML = '<p class="empty-state">No classes scheduled for today.</p>';
+    container.innerHTML = '<p class="empty-state">No classes scheduled for today. Enjoy your day! 🎉</p>';
     return;
   }
 
@@ -400,7 +411,7 @@ async function loadHistory() {
     const container = document.getElementById('history-list');
     
     if (!subjectId) {
-        container.innerHTML = '<p class="empty-state">Select a subject to view past classes.</p>';
+        container.innerHTML = '<p class="empty-state">Select a subject above to view past classes.</p>';
         return;
     }
     
