@@ -1,4 +1,20 @@
 // --- AUTHENTICATION LOGIC ---
+let isRegisterMode = false;
+
+function handleRegisterClick() {
+  const targetContainer = document.getElementById('target-pct-container');
+  const btn = document.getElementById('btn-register-mode');
+  
+  if (!isRegisterMode) {
+    isRegisterMode = true;
+    targetContainer.style.display = 'block';
+    btn.textContent = 'Submit Registration';
+    showToast("Enter target attendance % and submit", "info");
+  } else {
+    handleAuth('register');
+  }
+}
+
 async function checkAuthStatus() {
     try {
         const res = await fetch('/api/auth/me');
@@ -7,6 +23,18 @@ async function checkAuthStatus() {
             document.getElementById('auth-container').style.display = 'none';
             document.getElementById('app-container').style.display = 'block';
             document.getElementById('user-greeting').textContent = `Logged in as ${data.username}`;
+            
+            const badge = document.getElementById('nav-target-badge');
+            if (badge) {
+              const target = data.target_percentage ? parseInt(data.target_percentage) : 80;
+              badge.textContent = `🎯 Target: ${target}%`;
+            }
+
+            // On mobile, collapse setup by default
+            if (window.innerWidth <= 950) {
+              const details = document.querySelector('.sidebar-collapsible');
+              if (details) details.removeAttribute('open');
+            }
             
             fetchDashboard();
             fetchTodayClasses();
@@ -25,15 +53,22 @@ async function checkAuthStatus() {
 async function handleAuth(action) {
     const username = document.getElementById('auth-username').value.trim();
     const pin = document.getElementById('auth-pin').value.trim();
+    const targetInput = document.getElementById('auth-target');
+    const target_percentage = targetInput ? parseFloat(targetInput.value) || 80.0 : 80.0;
     
     if (!username || !pin) return showToast("Enter both username and PIN", "error");
     if (!/^\d{4}$/.test(pin)) return showToast("PIN must be exactly 4 digits", "error");
+
+    const payload = { username, pin };
+    if (action === 'register') {
+      payload.target_percentage = target_percentage;
+    }
 
     try {
         const res = await fetch(`/api/auth/${action}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, pin })
+            body: JSON.stringify(payload)
         });
         
         const data = await res.json();
@@ -61,7 +96,7 @@ async function logout() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  checkAuthStorage();
+  checkAuthStatus();
 
   const extraDateInput = document.getElementById("extra-class-date");
   if (extraDateInput) {
@@ -228,11 +263,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-function checkAuthStorage() {
-  checkAuthStatus();
-}
-
-// Toast Notification Handler
 function showToast(message, type = "info") {
   const container = document.getElementById("toast-container");
   if (!container) return;

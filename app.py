@@ -16,14 +16,14 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "fallback-secret-key-change-
 TURSO_DATABASE_URL = os.environ.get("TURSO_DATABASE_URL")
 TURSO_AUTH_TOKEN = os.environ.get("TURSO_AUTH_TOKEN")
 
-# --- LOGIN MANAGER SETUP ---
 login_manager = LoginManager()
 login_manager.init_app(app)
 
 class User(UserMixin):
-    def __init__(self, id, username):
+    def __init__(self, id, username, target_percentage=80.0):
         self.id = id
         self.username = username
+        self.target_percentage = target_percentage
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -31,14 +31,13 @@ def load_user(user_id):
     user = db.fetchone("SELECT * FROM users WHERE id = ?", (int(user_id),))
     db.close()
     if user:
-        return User(user['id'], user['username'])
+        return User(user['id'], user['username'], user.get('target_percentage', 80.0))
     return None
 
 @login_manager.unauthorized_handler
 def unauthorized():
     return jsonify({"error": "Unauthorized"}), 401
 
-# --- DATABASE WRAPPERS (Unchanged functionality) ---
 class TursoHTTPDatabase:
     def __init__(self, url, token):
         clean_url = url.strip().replace("libsql://", "https://")
@@ -48,18 +47,18 @@ class TursoHTTPDatabase:
         self.headers = {"Authorization": f"Bearer {token.strip()}", "Content-Type": "application/json"}
 
     def _format_args(self, args):
-        formatted_args = []
+        formatted = []
         for arg in args:
-            if arg is None: formatted_args.append({"type": "null"})
-            elif isinstance(arg, int): formatted_args.append({"type": "integer", "value": str(arg)})
-            elif isinstance(arg, float): formatted_args.append({"type": "float", "value": arg})
-            else: formatted_args.append({"type": "text", "value": str(arg)})
-        return formatted_args
+            if arg is None: formatted.append({"type": "null"})
+            elif isinstance(arg, int): formatted.append({"type": "integer", "value": str(arg)})
+            elif isinstance(arg, float): formatted.append({"type": "float", "value": arg})
+            else: formatted.append({"type": "text", "value": str(arg)})
+        return formatted
 
     def execute_pipeline(self, statements):
-        requests_payload = [{"type": "execute", "stmt": {"sql": sql, "args": self._format_args(args or [])}} for sql, args in statements]
-        requests_payload.append({"type": "close"})
-        res = requests.post(self.url, json={"requests": requests_payload}, headers=self.headers, timeout=30)
+        payload = [{"type": "execute", "stmt": {"sql": sql, "args": self._format_args(args or [])}} for sql, args in statements]
+        payload.append({"type": "close"})
+        res = requests.post(self.url, json={"requests": payload}, headers=self.headers, timeout=30)
         return res.json()
 
     def execute_raw(self, sql, args=None):
@@ -128,60 +127,83 @@ class DBConnection:
 def get_db():
     db = DBConnection()
     try:
-        # Check if new multi-tenant tables exist
         tbl = db.fetchone("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
         if not tbl:
-            # Force wipe old single-tenant tables to prevent schema clashes
             db.execute("DROP TABLE IF EXISTS attendance_logs")
             db.execute("DROP TABLE IF EXISTS holidays")
             db.execute("DROP TABLE IF EXISTS schedule")
             db.execute("DROP TABLE IF EXISTS subjects")
             
-            db.execute("CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password_hash TEXT)")
+            db.execute("CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password_hash TEXT, target_percentage REAL DEFAULT 80.0)")
             db.execute("CREATE TABLE subjects (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, name TEXT, target_percentage REAL, UNIQUE(user_id, name))")
             db.execute("CREATE TABLE schedule (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, subject_id INTEGER, day_of_week INTEGER)")
             db.execute("CREATE TABLE holidays (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, holiday_date TEXT, description TEXT, UNIQUE(user_id, holiday_date))")
             db.execute("CREATE TABLE attendance_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, subject_id INTEGER, class_date TEXT, status TEXT)")
+        else:
+            try:
+                db.execute("ALTER TABLE users ADD COLUMN target_percentage REAL DEFAULT 80.0")
+            except Exception:
+                pass
     except Exception as e:
         print(f"Table init error: {e}")
     return db
 
-# --- MATH LOGIC ---
 def calculate_stats(attended, conducted, total_semester, target_pct=0.80):
-    if conducted == 0: return {"percentage": 100.0, "status": "NO_CLASSES", "message": "No classes held yet"}
+    pct_display = int(round(target_pct * 100))
+    if conducted == 0: 
+        return {"percentage": 100.0, "status": "NO_CLASSES", "message": "No classes held yet"}
+    
     current_pct = attended / conducted
     if current_pct >= target_pct:
         skippable = int((attended - (target_pct * conducted)) / target_pct)
-        return {"percentage": round(current_pct * 100, 1), "status": "SAFE", "message": f"Safe to skip next {skippable} class(es)" if skippable > 0 else "On track (80% boundary)"}
+        return {
+            "percentage": round(current_pct * 100, 1), 
+            "status": "SAFE", 
+            "message": f"Safe to skip next {skippable} class(es)" if skippable > 0 else f"On track ({pct_display}% boundary)"
+        }
+    
     required = int(-(-((target_pct * conducted) - attended) // (1 - target_pct)))
     remaining = max(0, total_semester - conducted)
     if total_semester > 0 and required > remaining:
-        return {"percentage": round(current_pct * 100, 1), "status": "CRITICAL", "message": f"Cannot reach {int(target_pct*100)}%! Max possible: {round(((attended + remaining) / total_semester) * 100, 1)}%"}
-    return {"percentage": round(current_pct * 100, 1), "status": "CRITICAL", "message": f"Must attend next {required} class(es)"}
-
+        max_possible = round(((attended + remaining) / total_semester) * 100, 1)
+        return {
+            "percentage": round(current_pct * 100, 1), 
+            "status": "CRITICAL", 
+            "message": f"Cannot reach {pct_display}%! Max possible: {max_possible}%"
+        }
+    return {
+        "percentage": round(current_pct * 100, 1), 
+        "status": "CRITICAL", 
+        "message": f"Must attend next {required} class(es)"
+    }
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# --- AUTH ROUTES ---
 @app.route('/api/auth/register', methods=['POST'])
 def register():
     data = request.json
-    username, pin = data.get('username'), data.get('pin')
+    username = data.get('username')
+    pin = data.get('pin')
+    target = float(data.get('target_percentage', 80.0))
     
     if not username or not pin: 
         return jsonify({"error": "Missing fields"}), 400
-    if not pin.isdigit() or len(pin) < 4: 
-        return jsonify({"error": "PIN must be at least 4 digits"}), 400
+    if not pin.isdigit() or len(pin) != 4: 
+        return jsonify({"error": "PIN must be exactly 4 digits"}), 400
+    if target < 10 or target > 100:
+        return jsonify({"error": "Target must be between 10% and 100%"}), 400
     
     db = get_db()
     try:
-        # We still store it in the password_hash column to avoid database schema migrations
-        db.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (username, generate_password_hash(pin)))
+        db.execute(
+            "INSERT INTO users (username, password_hash, target_percentage) VALUES (?, ?, ?)", 
+            (username, generate_password_hash(pin), target)
+        )
         user = db.fetchone("SELECT * FROM users WHERE username = ?", (username,))
-        login_user(User(user['id'], user['username']))
-        return jsonify({"message": "Registered successfully"})
+        login_user(User(user['id'], user['username'], target))
+        return jsonify({"message": "Registered successfully", "target_percentage": target})
     except Exception:
         return jsonify({"error": "Username already exists"}), 400
     finally:
@@ -195,8 +217,9 @@ def login():
     db.close()
     
     if user and check_password_hash(user['password_hash'], data.get('pin')):
-        login_user(User(user['id'], user['username']))
-        return jsonify({"message": "Logged in successfully"})
+        target = user.get('target_percentage', 80.0) or 80.0
+        login_user(User(user['id'], user['username'], target))
+        return jsonify({"message": "Logged in successfully", "target_percentage": target})
     return jsonify({"error": "Invalid credentials"}), 401
 
 @app.route('/api/auth/delete-account', methods=['POST'])
@@ -204,14 +227,11 @@ def login():
 def delete_account():
     db = get_db()
     try:
-        # Purge all data owned by the user
         db.execute("DELETE FROM attendance_logs WHERE user_id = ?", (current_user.id,))
         db.execute("DELETE FROM holidays WHERE user_id = ?", (current_user.id,))
         db.execute("DELETE FROM schedule WHERE user_id = ?", (current_user.id,))
         db.execute("DELETE FROM subjects WHERE user_id = ?", (current_user.id,))
-        # Delete the user account itself
         db.execute("DELETE FROM users WHERE id = ?", (current_user.id,))
-        
         logout_user()
         return jsonify({"message": "Account and all data permanently deleted."}), 200
     except Exception as e:
@@ -223,28 +243,42 @@ def delete_account():
 @login_required
 def logout():
     logout_user()
-    return jsonify({"message": "Logged out"})
+    return jsonify({"message": "Logged out successfully"})
 
 @app.route('/api/auth/me', methods=['GET'])
 def get_me():
     if current_user.is_authenticated:
-        return jsonify({"username": current_user.username})
+        db = get_db()
+        u = db.fetchone("SELECT target_percentage FROM users WHERE id = ?", (current_user.id,))
+        db.close()
+        target = u.get('target_percentage', 80.0) if u else 80.0
+        return jsonify({"username": current_user.username, "target_percentage": target})
     return jsonify({"error": "Not logged in"}), 401
 
-
-# --- PROTECTED APP ROUTES ---
 @app.route('/api/dashboard', methods=['GET'])
 @login_required
 def get_dashboard():
     db = get_db()
+    u = db.fetchone("SELECT target_percentage FROM users WHERE id = ?", (current_user.id,))
+    user_target = (u.get('target_percentage', 80.0) or 80.0) / 100.0 if u else 0.80
+
     subjects = db.fetchall("SELECT * FROM subjects WHERE user_id = ?", (current_user.id,))
     summary = []
     for sub in subjects:
         total_semester = db.fetchone("SELECT COUNT(*) as c FROM attendance_logs WHERE subject_id = ? AND user_id = ? AND status != 'CANCELLED'", (sub['id'], current_user.id))['c']
         conducted = db.fetchone("SELECT COUNT(*) as c FROM attendance_logs WHERE subject_id = ? AND user_id = ? AND status IN ('PRESENT', 'ABSENT')", (sub['id'], current_user.id))['c']
         attended = db.fetchone("SELECT COUNT(*) as c FROM attendance_logs WHERE subject_id = ? AND user_id = ? AND status = 'PRESENT'", (sub['id'], current_user.id))['c']
-        stats = calculate_stats(attended, conducted, total_semester, sub.get('target_percentage', 80.0) / 100.0)
-        summary.append({"subject_id": sub['id'], "subject_name": sub['name'], "total_semester": total_semester, "conducted": conducted, "attended": attended, **stats})
+        
+        target = (sub.get('target_percentage') or (user_target * 100.0)) / 100.0
+        stats = calculate_stats(attended, conducted, total_semester, target)
+        summary.append({
+            "subject_id": sub['id'], 
+            "subject_name": sub['name'], 
+            "total_semester": total_semester, 
+            "conducted": conducted, 
+            "attended": attended, 
+            **stats
+        })
     db.close()
     return jsonify(summary)
 
@@ -263,7 +297,8 @@ def get_today_classes():
 @app.route('/api/attendance/<int:log_id>', methods=['PATCH'])
 @login_required
 def update_attendance(log_id):
-    if request.json.get('status') not in ['PRESENT', 'ABSENT', 'CANCELLED', 'PENDING']: return jsonify({"error": "Invalid status"}), 400
+    if request.json.get('status') not in ['PRESENT', 'ABSENT', 'CANCELLED', 'PENDING']: 
+        return jsonify({"error": "Invalid status"}), 400
     db = get_db()
     db.execute("UPDATE attendance_logs SET status = ? WHERE id = ? AND user_id = ?", (request.json.get('status'), log_id, current_user.id))
     db.close()
@@ -283,7 +318,10 @@ def add_extra_class():
 def add_subject():
     db = get_db()
     try:
-        db.execute("INSERT INTO subjects (user_id, name, target_percentage) VALUES (?, ?, ?)", (current_user.id, request.json['name'], request.json.get('target_percentage', 80.0)))
+        u = db.fetchone("SELECT target_percentage FROM users WHERE id = ?", (current_user.id,))
+        default_target = u.get('target_percentage', 80.0) if u else 80.0
+        target = request.json.get('target_percentage', default_target)
+        db.execute("INSERT INTO subjects (user_id, name, target_percentage) VALUES (?, ?, ?)", (current_user.id, request.json['name'], target))
         return jsonify({"message": "Subject added"})
     except Exception: return jsonify({"error": "Database error"}), 400
     finally: db.close()
@@ -345,7 +383,6 @@ def get_subject_history(subject_id):
 @login_required
 def reset_database():
     db = get_db()
-    # ONLY deletes the currently logged-in user's data
     db.execute("DELETE FROM attendance_logs WHERE user_id = ?", (current_user.id,))
     db.execute("DELETE FROM holidays WHERE user_id = ?", (current_user.id,))
     db.execute("DELETE FROM schedule WHERE user_id = ?", (current_user.id,))

@@ -16,18 +16,24 @@
       <p class="auth-subtitle">Your personal semester dashboard</p>
       
       <div class="auth-form">
-        <input type="text" id="auth-username" placeholder="Student Username" required>
-        <input type="password" id="auth-pin" placeholder="4-Digit PIN" inputmode="numeric" pattern="[0-9]*" maxlength="4" required>
+        <input type="text" id="auth-username" placeholder="Student Username" autocomplete="username" required>
+        <!-- Masked numeric input prevents Chrome breached credential warnings -->
+        <input type="text" id="auth-pin" placeholder="4-Digit PIN" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="one-time-code" style="-webkit-text-security: disc;" required>
         
+        <div id="target-pct-container" style="display: none; margin-bottom: 12px; text-align: left;">
+          <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Target Attendance Requirement (%):</label>
+          <input type="number" id="auth-target" placeholder="Target % (e.g. 75, 80, 85)" min="10" max="100" value="80">
+        </div>
+
         <div class="auth-actions">
-          <button onclick="handleAuth('login')" class="btn-primary">Log In</button>
-          <button onclick="handleAuth('register')" class="btn-secondary">Create Account</button>
+          <button type="button" onclick="handleAuth('login')" class="btn-primary">Log In</button>
+          <button type="button" onclick="handleRegisterClick()" class="btn-secondary" id="btn-register-mode">Create Account</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- MAIN APPLICATION: DASHBOARD (Properly wrapping the entire app interface) -->
+  <!-- MAIN APPLICATION: DASHBOARD -->
   <div id="app-container" style="display: none;">
     
     <!-- Top Navigation -->
@@ -35,7 +41,7 @@
       <div class="nav-left">
         <span class="logo-icon">🎓</span>
         <h1>CampusTrack</h1>
-        <span class="target-badge">🎯 Target: 80%</span>
+        <span class="target-badge" id="nav-target-badge">🎯 Target: 80%</span>
       </div>
       <div class="nav-right">
         <span class="greeting">👋 <span id="user-greeting"></span></span>
@@ -45,99 +51,9 @@
 
     <div id="toast-container" class="toast-stack"></div>
 
-    <!-- Productivity App Layout -->
     <main class="dashboard-layout">
       
-      <!-- Left Sidebar: Semester Setup -->
-      <aside class="setup-sidebar">
-        <div class="sidebar-header">
-          <h2>⚙️ Semester Setup</h2>
-        </div>
-        <div class="sidebar-scroll">
-          
-          <section class="setup-block">
-            <label>📚 1. Add Subjects</label>
-            <form id="add-subject-form">
-              <input type="text" id="subject-name" placeholder="Subject Name (e.g. Network Theory)" required>
-              <button type="submit" class="btn-primary">Save Subject</button>
-            </form>
-          </section>
-
-          <section class="setup-block">
-            <label>🌴 2. Vacations & Exams</label>
-            <form id="add-holiday-form">
-              <div class="input-row">
-                <input type="date" id="holiday-start" required title="Start Date">
-                <input type="date" id="holiday-end" title="End Date">
-              </div>
-              <input type="text" id="holiday-desc" placeholder="Reason (e.g. Diwali Break)">
-              <button type="submit" class="btn-primary">Add Dates</button>
-            </form>
-          </section>
-
-          <section class="setup-block">
-            <label>📅 3. Weekly Timetable</label>
-            <form id="add-schedule-form">
-              <select id="sched-subject-id" class="subject-dropdown" required>
-                <option value="">-- Select Subject --</option>
-              </select>
-              <div class="input-row">
-                <select id="sched-day" required>
-                 <option value="0">Monday</option>
-                 <option value="1">Tuesday</option>
-                 <option value="2">Wednesday</option>
-                 <option value="3">Thursday</option>
-                 <option value="4">Friday</option>
-                 <option value="5">Saturday</option>
-                 <option value="6">Sunday</option>
-                </select>
-                <input type="number" id="sched-count" min="1" max="10" value="1" required title="Classes per day">
-              </div>
-              <button type="submit" class="btn-primary">Add to Timetable</button>
-            </form>
-          </section>
-
-          <section class="setup-block">
-            <label>🚀 4. Generate Classes</label>
-            <form id="generate-semester-form">
-              <div class="input-row">
-                <input type="date" id="start-date" required title="Semester Start">
-                <input type="date" id="end-date" required title="Semester End">
-              </div>
-              <button type="submit" class="btn-primary">Generate Semester</button>
-            </form>
-          </section>
-
-          <section class="setup-block">
-            <label>➕ 5. Extra Class</label>
-            <form id="add-extra-class-form">
-              <select id="extra-subject-id" class="subject-dropdown" required>
-                <option value="">-- Select Subject --</option>
-              </select>
-              <div class="input-row">
-                <input type="date" id="extra-class-date" required title="Date">
-                <select id="extra-class-status">
-                  <option value="PENDING">Pending</option>
-                  <option value="PRESENT">Present</option>
-                  <option value="ABSENT">Absent</option>
-                </select>
-              </div>
-              <button type="submit" class="btn-success">Add Extra Class</button>
-            </form>
-          </section>
-
-          <section class="setup-block danger-zone">
-            <label>⚠️ Danger Zone</label>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-              <button type="button" id="btn-reset-db" class="btn-danger">Start Fresh (Wipe Data)</button>
-              <button type="button" id="btn-delete-account" class="btn-danger" style="background: transparent; border-style: dashed;">Delete Account</button>
-            </div>
-          </section>
-
-        </div>
-      </aside>
-
-      <!-- Right Main Area: Dashboard -->
+      <!-- Primary Content (Today's Classes & Overview) -->
       <div class="main-dashboard">
 
         <section class="dashboard-section">
@@ -167,6 +83,100 @@
         </section>
 
       </div>
+
+      <!-- Collapsible Setup Panel (Sidebar on Desktop, Bottom Accordion on Mobile) -->
+      <aside class="setup-sidebar">
+        <details class="sidebar-collapsible" open>
+          <summary class="sidebar-header">
+            <h2>⚙️ Semester Setup & Tools</h2>
+            <span class="accordion-hint">(Tap to toggle)</span>
+          </summary>
+          
+          <div class="sidebar-scroll">
+            
+            <section class="setup-block">
+              <label>📚 1. Add Subjects</label>
+              <form id="add-subject-form">
+                <input type="text" id="subject-name" placeholder="Subject Name (e.g. Network Theory)" required>
+                <button type="submit" class="btn-primary">Save Subject</button>
+              </form>
+            </section>
+
+            <section class="setup-block">
+              <label>🌴 2. Vacations & Exams</label>
+              <form id="add-holiday-form">
+                <div class="input-row">
+                  <input type="date" id="holiday-start" required title="Start Date">
+                  <input type="date" id="holiday-end" title="End Date">
+                </div>
+                <input type="text" id="holiday-desc" placeholder="Reason (e.g. Diwali Break)">
+                <button type="submit" class="btn-primary">Add Dates</button>
+              </form>
+            </section>
+
+            <section class="setup-block">
+              <label>📅 3. Weekly Timetable</label>
+              <form id="add-schedule-form">
+                <select id="sched-subject-id" class="subject-dropdown" required>
+                  <option value="">-- Select Subject --</option>
+                </select>
+                <div class="input-row">
+                  <select id="sched-day" required>
+                   <option value="0">Monday</option>
+                   <option value="1">Tuesday</option>
+                   <option value="2">Wednesday</option>
+                   <option value="3">Thursday</option>
+                   <option value="4">Friday</option>
+                   <option value="5">Saturday</option>
+                   <option value="6">Sunday</option>
+                  </select>
+                  <input type="number" id="sched-count" min="1" max="10" value="1" required title="Classes per day">
+                </div>
+                <button type="submit" class="btn-primary">Add to Timetable</button>
+              </form>
+            </section>
+
+            <section class="setup-block">
+              <label>🚀 4. Generate Classes</label>
+              <form id="generate-semester-form">
+                <div class="input-row">
+                  <input type="date" id="start-date" required title="Semester Start">
+                  <input type="date" id="end-date" required title="Semester End">
+                </div>
+                <button type="submit" class="btn-primary">Generate Semester</button>
+              </form>
+            </section>
+
+            <section class="setup-block">
+              <label>➕ 5. Extra Class</label>
+              <form id="add-extra-class-form">
+                <select id="extra-subject-id" class="subject-dropdown" required>
+                  <option value="">-- Select Subject --</option>
+                </select>
+                <div class="input-row">
+                  <input type="date" id="extra-class-date" required title="Date">
+                  <select id="extra-class-status">
+                    <option value="PENDING">Pending</option>
+                    <option value="PRESENT">Present</option>
+                    <option value="ABSENT">Absent</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn-success">Add Extra Class</button>
+              </form>
+            </section>
+
+            <section class="setup-block danger-zone">
+              <label>⚠️ Danger Zone</label>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button type="button" id="btn-reset-db" class="btn-danger">Start Fresh (Wipe Data)</button>
+                <button type="button" id="btn-delete-account" class="btn-danger" style="background: transparent; border-style: dashed;">Delete Account</button>
+              </div>
+            </section>
+
+          </div>
+        </details>
+      </aside>
+
     </main>
   </div>
 

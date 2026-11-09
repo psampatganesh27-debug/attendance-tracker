@@ -1,25 +1,23 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap');
 
 :root {
-  /* Soft Dark Productivity Palette */
   --bg-main: #121212;
   --bg-sidebar: #18181b;
   --bg-card: #27272a;
   --bg-hover: #3f3f46;
   
   --border-soft: #3f3f46;
-  --border-focus: #8b5cf6; /* Soft Violet */
+  --border-focus: #8b5cf6;
   
   --text-main: #f4f4f5;
   --text-muted: #a1a1aa;
   
-  /* Accents */
   --primary-color: #8b5cf6;
   --primary-hover: #7c3aed;
   
-  --success-color: #10b981; /* Soft Emerald */
-  --danger-color: #f43f5e; /* Soft Rose */
-  --warning-color: #f59e0b; /* Amber */
+  --success-color: #10b981;
+  --danger-color: #f43f5e;
+  --warning-color: #f59e0b;
   
   --status-present-bg: rgba(16, 185, 129, 0.15);
   --status-absent-bg: rgba(244, 63, 94, 0.15);
@@ -51,9 +49,7 @@ h1, h2, h3, h4 {
 
 .hidden { display: none !important; }
 
-/* =========================================
-   AUTHENTICATION: STUDENT PORTAL
-========================================= */
+/* AUTHENTICATION */
 .auth-wrapper {
   display: flex;
   justify-content: center;
@@ -66,7 +62,7 @@ h1, h2, h3, h4 {
 .auth-card {
   background: var(--bg-sidebar);
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   padding: 40px;
   border-radius: 24px;
   border: 1px solid var(--border-soft);
@@ -75,33 +71,12 @@ h1, h2, h3, h4 {
   animation: floatUp 0.6s ease-out;
 }
 
-.auth-icon {
-  font-size: 3rem;
-  margin-bottom: 10px;
-}
+.auth-icon { font-size: 3rem; margin-bottom: 10px; }
+.auth-card h2 { font-size: 1.8rem; color: var(--text-main); margin-bottom: 5px; }
+.auth-subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; }
+.auth-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
 
-.auth-card h2 {
-  font-size: 1.8rem;
-  color: var(--text-main);
-  margin-bottom: 5px;
-}
-
-.auth-subtitle {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  margin-bottom: 30px;
-}
-
-.auth-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 10px;
-}
-
-/* =========================================
-   TOP NAVIGATION
-========================================= */
+/* TOP NAVIGATION */
 .top-nav {
   display: flex;
   justify-content: space-between;
@@ -114,16 +89,8 @@ h1, h2, h3, h4 {
   z-index: 100;
 }
 
-.nav-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.nav-left h1 {
-  font-size: 1.25rem;
-  font-weight: 600;
-}
+.nav-left { display: flex; align-items: center; gap: 10px; }
+.nav-left h1 { font-size: 1.25rem; font-weight: 600; }
 
 .target-badge {
   background: rgba(139, 92, 246, 0.15);
@@ -135,28 +102,14 @@ h1, h2, h3, h4 {
   margin-left: 10px;
 }
 
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
+.nav-right { display: flex; align-items: center; gap: 20px; }
+.greeting { font-size: 0.9rem; color: var(--text-muted); }
+.greeting span { color: var(--text-main); font-weight: 600; }
 
-.greeting {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-}
-
-.greeting span {
-  color: var(--text-main);
-  font-weight: 600;
-}
-
-/* =========================================
-   LAYOUT: SIDEBAR & DASHBOARD
-========================================= */
+/* LAYOUT: DESKTOP */
 .dashboard-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 1fr 340px; /* Overview First, Sidebar on Right */
   gap: 30px;
   max-width: 1400px;
   margin: 0 auto;
@@ -170,37 +123,47 @@ h1, h2, h3, h4 {
   border-radius: 20px;
   position: sticky;
   top: 90px;
-  height: calc(100vh - 120px);
+  max-height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.sidebar-collapsible {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .sidebar-header {
   padding: 20px;
   border-bottom: 1px solid var(--border-soft);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
 }
 
-.sidebar-header h2 {
-  font-size: 1.1rem;
-  color: var(--text-main);
-}
+.sidebar-header::-webkit-details-marker { display: none; }
+.sidebar-header h2 { font-size: 1.1rem; color: var(--text-main); }
+.accordion-hint { font-size: 0.75rem; color: var(--text-muted); }
+
 .sidebar-scroll {
   padding: 20px;
-  padding-bottom: 40px; /* Gives breathing room at the bottom */
+  padding-bottom: 40px;
   overflow-y: auto;
-  overflow-x: hidden; /* Kills the horizontal scrollbar */
-  flex: 1;
+  overflow-x: hidden;
+  max-height: calc(100vh - 190px);
 }
 
-/* Custom Scrollbar */
 .sidebar-scroll::-webkit-scrollbar { width: 6px; }
 .sidebar-scroll::-webkit-scrollbar-thumb { background: var(--border-soft); border-radius: 10px; }
 
-.setup-block {
-  margin-bottom: 25px;
-}
-
+.setup-block { margin-bottom: 25px; }
 .setup-block label {
   display: block;
   font-family: var(--font-heading);
@@ -209,9 +172,7 @@ h1, h2, h3, h4 {
   margin-bottom: 10px;
 }
 
-/* =========================================
-   INPUTS & BUTTONS
-========================================= */
+/* INPUTS & BUTTONS */
 input, select {
   width: 100%;
   padding: 12px 16px;
@@ -224,16 +185,8 @@ input, select {
   transition: all 0.2s ease;
 }
 
-.input-row {
-  display: flex;
-  gap: 10px;
-}
-
-/* Forces side-by-side inputs to shrink properly without overflowing */
-.input-row input, .input-row select {
-  flex: 1;
-  min-width: 0; 
-}
+.input-row { display: flex; gap: 10px; }
+.input-row input, .input-row select { flex: 1; min-width: 0; }
 
 input:focus, select:focus {
   outline: none;
@@ -268,28 +221,11 @@ button {
 .btn-logout { width: auto; padding: 8px 16px; background: transparent; color: var(--text-muted); border: 1px solid var(--border-soft); border-radius: 8px; }
 .btn-logout:hover { background: var(--bg-hover); color: var(--text-main); }
 
-/* =========================================
-   DASHBOARD CARDS
-========================================= */
-.main-dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
-}
+/* DASHBOARD */
+.main-dashboard { display: flex; flex-direction: column; gap: 40px; }
+.dashboard-section h2 { font-size: 1.3rem; margin-bottom: 20px; color: var(--text-main); }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
 
-.dashboard-section h2 {
-  font-size: 1.3rem;
-  margin-bottom: 20px;
-  color: var(--text-main);
-}
-
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-}
-
-/* Injected JS Cards */
 .card {
   background: var(--bg-card);
   padding: 24px;
@@ -302,21 +238,9 @@ button {
   animation: floatUp 0.5s ease-out backwards;
 }
 
-.card:hover {
-  transform: translateY(-5px);
-  border-color: var(--border-focus);
-}
-
-.card h4 {
-  font-size: 1.1rem;
-  margin-bottom: 10px;
-  color: var(--text-main);
-}
-
-.card p {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
+.card:hover { transform: translateY(-5px); border-color: var(--border-focus); }
+.card h4 { font-size: 1.1rem; margin-bottom: 10px; color: var(--text-main); }
+.card p { color: var(--text-muted); font-size: 0.9rem; }
 
 .pct {
   font-family: var(--font-heading);
@@ -326,15 +250,10 @@ button {
   margin: 10px 0 15px 0;
 }
 
-.card .message {
-  font-size: 0.85rem;
-  margin-top: 10px;
-  font-weight: 500;
-}
+.card .message { font-size: 0.85rem; margin-top: 10px; font-weight: 500; }
 .card.SAFE .message { color: var(--success-color); }
 .card.CRITICAL .message { color: var(--danger-color); }
 
-/* Empty States */
 .empty-state {
   grid-column: 1 / -1;
   background: var(--bg-sidebar);
@@ -345,15 +264,8 @@ button {
   border: 1px dashed var(--border-soft);
 }
 
-/* =========================================
-   STATUS BUTTONS (Present/Absent/Cancel)
-========================================= */
-.status-btns {
-  display: flex;
-  gap: 8px;
-  margin-top: 15px;
-}
-
+/* STATUS BUTTONS */
+.status-btns { display: flex; gap: 8px; margin-top: 15px; }
 .status-btns button {
   padding: 10px;
   font-size: 0.85rem;
@@ -362,25 +274,14 @@ button {
   color: var(--text-muted);
   border: 1px solid var(--border-soft);
 }
-
-.status-btns button:hover {
-  background: var(--bg-hover);
-  color: var(--text-main);
-}
-
+.status-btns button:hover { background: var(--bg-hover); color: var(--text-main); }
 .status-btns button.active { font-weight: 600; border-color: transparent; }
 .status-btns .btn-present.active { background: var(--status-present-bg); color: var(--success-color); box-shadow: inset 0 0 0 1px var(--success-color); }
 .status-btns .btn-absent.active { background: var(--status-absent-bg); color: var(--danger-color); box-shadow: inset 0 0 0 1px var(--danger-color); }
 .status-btns .btn-cancel.active { background: var(--status-cancel-bg); color: var(--warning-color); box-shadow: inset 0 0 0 1px var(--warning-color); }
 
-/* =========================================
-   HISTORY LISTING
-========================================= */
-.history-controls {
-  max-width: 350px;
-  margin-bottom: 20px;
-}
-
+/* HISTORY LIST */
+.history-controls { max-width: 350px; margin-bottom: 20px; }
 .history-list-container .card {
   flex-direction: row;
   justify-content: space-between;
@@ -388,12 +289,9 @@ button {
   padding: 16px 24px;
   margin-bottom: 12px;
 }
-
 .history-list-container .status-btns { margin-top: 0; }
 
-/* =========================================
-   TOAST NOTIFICATIONS
-========================================= */
+/* TOASTS */
 .toast-stack {
   position: fixed;
   bottom: 30px;
@@ -420,9 +318,6 @@ button {
 .toast.error { border-left: 4px solid var(--danger-color); }
 .toast.info { border-left: 4px solid var(--primary-color); }
 
-/* =========================================
-   ANIMATIONS
-========================================= */
 @keyframes floatUp {
   0% { transform: translateY(20px); opacity: 0; }
   100% { transform: translateY(0); opacity: 1; }
@@ -433,11 +328,43 @@ button {
   100% { transform: translateX(0); opacity: 1; }
 }
 
-/* =========================================
-   RESPONSIVE DESIGN (Mobile)
-========================================= */
+/* RESPONSIVE DESIGN (MOBILE ADAPTATION) */
 @media (max-width: 950px) {
-  .dashboard-layout { grid-template-columns: 1fr; padding: 20px; gap: 40px; }
-  .setup-sidebar { position: relative; top: 0; height: auto; max-height: 500px; }
-  .history-list-container .card { flex-direction: column; gap: 15px; align-items: stretch; }
+  .dashboard-layout {
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    gap: 25px;
+  }
+  
+  .top-nav {
+    padding: 12px 16px;
+  }
+
+  .nav-left h1 {
+    font-size: 1.1rem;
+  }
+
+  .setup-sidebar {
+    position: static;
+    max-height: none;
+    order: 2; /* Sits below the main schedule */
+    width: 100%;
+  }
+
+  .main-dashboard {
+    order: 1; /* Main dashboard shows first */
+    width: 100%;
+    gap: 25px;
+  }
+
+  .sidebar-scroll {
+    max-height: 480px;
+  }
+
+  .history-list-container .card {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
 }
