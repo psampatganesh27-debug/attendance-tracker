@@ -97,8 +97,17 @@ async function handleAuth(action) {
 async function logout() {
     try {
         await fetch('/api/auth/logout', { method: 'POST' });
+        
+        // 1. Clear credentials
         document.getElementById('auth-username').value = '';
         document.getElementById('auth-pin').value = '';
+        
+        // 2. Erase Ghost Data & reset to skeletons
+        document.getElementById("today-classes-list").innerHTML = '<div class="loading-skeleton"></div>';
+        document.getElementById("subject-cards-list").innerHTML = '<div class="loading-skeleton"></div>';
+        document.getElementById("history-list").innerHTML = '';
+        document.getElementById('user-greeting').textContent = '';
+        
         showToast("Logged out successfully", "info");
         checkAuthStatus(); 
     } catch (e) {

@@ -15,7 +15,8 @@
       <h2>CampusTrack</h2>
       <p class="auth-subtitle">Your personal semester dashboard</p>
       
-      <div class="auth-form">
+      <!-- Changed from div to form with an onsubmit handler -->
+      <form class="auth-form" onsubmit="submitAuth(); return false;">
         <input type="text" id="auth-username" placeholder="Student Username" autocomplete="username" required>
         <input type="text" id="auth-pin" placeholder="4-Digit PIN" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="one-time-code" style="-webkit-text-security: disc;" required>
         
@@ -25,13 +26,14 @@
         </div>
 
         <div class="auth-actions">
-          <button type="button" id="btn-main-auth" onclick="submitAuth()" class="btn-primary">Log In</button>
+          <!-- Changed button type to submit and removed the onclick -->
+          <button type="submit" id="btn-main-auth" class="btn-primary">Log In</button>
         </div>
         
         <div class="auth-toggle">
           <span id="auth-toggle-text">New here? <a href="#" onclick="toggleAuthMode(); return false;">Create an account</a></span>
         </div>
-      </div>
+      </form>
     </div>
   </div>
 
@@ -50,8 +52,6 @@
         <button onclick="logout()" class="btn-logout">Log Out</button>
       </div>
     </nav>
-
-    <div id="toast-container" class="toast-stack"></div>
 
     <main class="dashboard-layout">
       
@@ -192,6 +192,9 @@
 
     </main>
   </div>
+
+<!-- Global Toast Notifications -->
+  <div id="toast-container" class="toast-stack"></div>
 
   <script src="/frontend/script.js"></script>
 </body>
