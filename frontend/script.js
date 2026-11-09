@@ -22,7 +22,7 @@ async function checkAuthStatus() {
             const data = await res.json();
             document.getElementById('auth-container').style.display = 'none';
             document.getElementById('app-container').style.display = 'block';
-            document.getElementById('user-greeting').textContent = `Logged in as ${data.username}`;
+            document.getElementById('user-greeting').textContent = `👤 ${data.username}`;
             
             const badge = document.getElementById('nav-target-badge');
             if (badge) {
