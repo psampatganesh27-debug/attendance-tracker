@@ -1,0 +1,19 @@
+{
+  "name": "CampusTrack",
+  "short_name": "CampusTrack",
+  "description": "Student Attendance & Margin Tracker",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#18181b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/frontend/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

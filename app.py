@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, session
+from flask import Flask, request, jsonify, render_template, session, send_from_directory
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
@@ -184,6 +184,14 @@ def calculate_stats(attended, conducted, total_semester, target_pct=0.80):
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/manifest.json')
+def manifest():
+    return send_from_directory('frontend', 'manifest.json', mimetype='application/manifest+json')
+
+@app.route('/sw.js')
+def service_worker():
+    return send_from_directory('frontend', 'sw.js', mimetype='application/javascript')
 
 @app.route('/api/auth/register', methods=['POST'])
 def register():
