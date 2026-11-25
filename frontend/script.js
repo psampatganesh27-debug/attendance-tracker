@@ -61,6 +61,43 @@ async function checkAuthStatus() {
     }
 }
 
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+
+  const installBox = document.getElementById('install-app-box');
+  if (installBox) {
+    installBox.style.display = 'block';
+  }
+});
+
+async function installPWA() {
+  if (!deferredPrompt) return;
+
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+
+  deferredPrompt = null;
+  const installBox = document.getElementById('install-app-box');
+  if (installBox) {
+    installBox.style.display = 'none';
+  }
+
+  if (outcome === 'accepted') {
+    showToast('CampusTrack installed!', 'success');
+  }
+}
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  const installBox = document.getElementById('install-app-box');
+  if (installBox) {
+    installBox.style.display = 'none';
+  }
+});
+
 async function handleAuth(action) {
     const username = document.getElementById('auth-username').value.trim();
     const pin = document.getElementById('auth-pin').value.trim();

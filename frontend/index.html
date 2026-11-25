@@ -24,7 +24,7 @@
       <form class="auth-form" onsubmit="submitAuth(); return false;">
         <input type="text" id="auth-username" placeholder="Student Username" autocomplete="username" required>
         <input type="text" id="auth-pin" placeholder="4-Digit PIN" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="one-time-code" style="-webkit-text-security: disc;" required>
-        
+
         <div id="target-pct-container" style="display: none; margin-bottom: 12px; text-align: left;">
           <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Target Attendance Requirement (%):</label>
           <input type="number" id="auth-target" placeholder="Target % (e.g. 75, 80, 85)" min="10" max="100" value="80">
@@ -39,6 +39,12 @@
           <span id="auth-toggle-text">New here? <a href="#" onclick="toggleAuthMode(); return false;">Create an account</a></span>
         </div>
       </form>
+
+      <div id="install-app-box" style="display: none; margin-top: 16px;">
+        <button type="button" id="btn-install-app" onclick="installPWA()" class="btn-secondary">
+          📲 Install App
+        </button>
+      </div>
     </div>
   </div>
 
